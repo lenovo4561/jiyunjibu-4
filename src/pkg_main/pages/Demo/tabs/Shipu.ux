@@ -1,0 +1,175 @@
+<template>
+  <div class="tab-content">
+    <div class="header">
+      <text class="page-title">食谱推荐</text>
+    </div>
+    
+    <list class="recipe-list">
+      <list-item type="recipe" class="recipe-item" for="{{(index, item) in recipeList}}" onclick="goDetail(item)">
+        <div class="card-content">
+          <image class="recipe-image" src="{{item.image}}"></image>
+          <div class="recipe-info">
+            <text class="recipe-name">{{item.name}}</text>
+            <text class="recipe-desc">{{item.desc}}</text>
+          </div>
+        </div>
+      </list-item>
+    </list>
+  </div>
+</template>
+
+<script>
+import router from '@system.router'
+import recipesData from '../../../helper/recipesData'
+
+// 图片映射表
+const imageMap = {
+  '番茄炒蛋': '/pkg_main/assets/imgss/fanqiechaidan.jpg',
+  '可乐鸡翅': '/pkg_main/assets/imgss/kele_jichi.jpg',
+  '青椒炒肉丝': '/pkg_main/assets/imgss/qingjiao_chaorusi.jpg',
+  '宫保鸡丁': '/pkg_main/assets/imgss/gongbao_jiding.jpg',
+  '鱼香肉丝': '/pkg_main/assets/imgss/yuxiang_rousi.jpg',
+  '红烧排骨': '/pkg_main/assets/imgss/hongshao_paigu.jpg',
+  '蒜苔炒腊肉': '/pkg_main/assets/imgss/suantai_chaolarou.jpg',
+  '黄焖鸡': '/pkg_main/assets/imgss/huangmenji.jpg',
+  '清炒时蔬': '/pkg_main/assets/imgss/qingchao_shishu.jpg',
+  '蒜蓉油麦菜': '/pkg_main/assets/imgss/suanrong_youmaicai.jpg',
+  '酸辣土豆丝': '/pkg_main/assets/imgss/suanla_tudousi.jpg',
+  '香菇青菜': '/pkg_main/assets/imgss/xianggu_qingcai.jpg',
+  '清炒西兰花': '/pkg_main/assets/imgss/qingchao_xilanhua.jpg',
+  '地三鲜': '/pkg_main/assets/imgss/disanxian.jpg',
+  '番茄鸡蛋汤': '/pkg_main/assets/imgss/fanqie_jidantang.jpg',
+  '紫菜蛋花汤': '/pkg_main/assets/imgss/zicai_danhuatang.jpg',
+  '冬瓜海带排骨汤': '/pkg_main/assets/imgss/donggua_haidai_paigutang.jpg',
+  '玉米排骨汤': '/pkg_main/assets/imgss/yumi_paigutang.jpg',
+  '麻婆豆腐': '/pkg_main/assets/imgss/mapo_doufu.jpg',
+  '菌菇豆腐汤': '/pkg_main/assets/imgss/jungu_doufutang.jpg'
+}
+
+// 从title中提取菜名（括号前的部分）
+function extractName(title) {
+  const match = title.match(/^([^（(]+)/)
+  return match ? match[1].trim() : title
+}
+
+export default {
+  data: {
+    recipeList: []
+  },
+
+  onInit() {
+    // 从recipesData生成recipeList
+    this.recipeList = recipesData.map(item => {
+      const name = extractName(item.title)
+      return {
+        name: name,
+        desc: item.title,
+        image: imageMap[name] || '/pkg_main/assets/imgs/logo.png',
+        ingredients: item.ingredients,
+        steps: item.steps
+      }
+    })
+  },
+
+  goDetail(item) {
+    if (!item) return
+    // 给步骤添加 a. b. c. 前缀
+    const stepLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
+    const formattedSteps = item.steps
+      .split('\n')
+      .map((step, index) => `${stepLabels[index] || (index + 1)}. ${step}`)
+      .join('\n')
+    
+    router.push({
+      uri: 'pkg_main/pages/DemoDetail',
+      params: {
+        name: item.name,
+        image: item.image,
+        ingredients: item.ingredients,
+        steps: formattedSteps
+      }
+    })
+  }
+}
+</script>
+
+<style lang="scss">
+@import './../../../assets/styles/style.scss';
+
+.tab-content {
+  flex: 1;
+  flex-direction: column;
+  background-color: #f5f5f5;
+  background-image: url('/pkg_main/assets/imgs/shouyedingbg.png');
+  background-size: 100% auto;
+  background-position: top;
+  background-repeat: no-repeat;
+  padding-bottom: 42px;
+}
+
+.header {
+  height: 100 * $size-factor;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20 * $size-factor;
+}
+
+.page-title {
+  font-size: 18 * $size-factor;
+  color: #000000;
+  font-weight: 900;
+}
+
+.recipe-list {
+  flex: 1;
+  width: 100%;
+  padding: 0 10px;
+  background-color: transparent;
+  columns: 1;
+}
+
+.recipe-item {
+  width: 100%;
+  height: 132px;
+  margin-bottom: 10px;
+}
+
+.card-content {
+  width: 100%;
+  height: 132px;
+  flex-direction: column;
+  border-radius: 7px;
+  background-color: #ffffff;
+  overflow: hidden;
+}
+
+.recipe-image {
+  width: 100%;
+  height: 104px;
+}
+
+.recipe-info {
+  width: 100%;
+  height: 28px;
+  background-color: #000000;
+  flex-direction: row;
+  align-items: center;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+.recipe-name {
+  color: #ffffff;
+  font-size: 10px;
+  font-weight: 900;
+}
+
+.recipe-desc {
+  color: #999999;
+  font-size: 7px;
+  margin-left: 3px;
+  lines: 1;
+  text-overflow: ellipsis;
+}
+</style>

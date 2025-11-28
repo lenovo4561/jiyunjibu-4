@@ -1,0 +1,12 @@
+$brand: #09ba07;
+
+$white: #ffffff;
+$black: #000000;
+$grey: #9393aa;
+$red: #fa0101;
+$yellow: #ffff00;
+
+// $size-factor 为 0.694px，对应的 designWidth 为 250，长度使用：360的设计稿尺寸数字 * $size-factor
+// 如果 designWidth 设置为 360，可修改 $size-factor 为 1px
+// 当前 designWidth 为 250
+$size-factor: 0.694px;

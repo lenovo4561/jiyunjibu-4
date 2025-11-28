@@ -1,0 +1,15 @@
+<!-- 
+  Copyright (c) 2021-present, the hapjs-platform Project Contributors
+  SPDX-License-Identifier: Apache-2.0
+-->
+
+<script>
+/**
+ * 应用级别的配置，供所有页面公用
+ * 注意：helper 已移至分包 pkg_main，在分包页面中按需引入
+ */
+
+export default {
+  onCreate() {}
+}
+</script>

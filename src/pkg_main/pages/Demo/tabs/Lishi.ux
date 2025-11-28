@@ -1,0 +1,652 @@
+<template>
+  <!-- Use a scrollable container for the content -->
+  <div class="tab-content">
+    <div class="header">
+      <text class="page-title">步数历史</text>
+    </div>
+    
+    <div class="stats-grid">
+      <div class="stat-item">
+        <text class="stat-value">{{historyStats.steps}}</text>
+        <text class="stat-label">总步数(步)</text>
+      </div>
+      <div class="stat-item">
+        <text class="stat-value">{{historyStats.distance}}</text>
+        <text class="stat-label">总公里(km)</text>
+      </div>
+      <div class="stat-item">
+        <text class="stat-value">{{historyStats.duration}}</text>
+        <text class="stat-label">总时长(min)</text>
+      </div>
+      <div class="stat-item">
+        <text class="stat-value">{{historyStats.calories}}</text>
+        <text class="stat-label">总消耗(kcal)</text>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-row" style="height:37px">
+        <div class="week-nav-btn" onclick="prevWeek">
+           <image class="nav-icon" src="/pkg_main/assets/imgs/zuo.png"></image>
+           <text class="nav-text">上一周</text>
+        </div>
+        <div class="card-title-box">
+           <text class="card-title">步数</text>
+           <image class="title-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+        </div>
+        <div class="week-nav-btn" onclick="nextWeek">
+           <text class="nav-text">下一周</text>
+           <image class="nav-icon" src="/pkg_main/assets/imgs/you.png"></image>
+        </div>
+      </div>
+      
+      <div class="chart-container" if="{{hasData}}">
+        <canvas id="step-chart" class="step-chart"></canvas>
+        <div class="chart-legend" height="51px">
+          <div class="legend-icon">
+             <div class="legend-circle"></div>
+             <div class="legend-line"></div>
+             <div class="legend-circle"></div>
+          </div>
+          <text class="legend-text">步数统计</text>
+        </div>
+      </div>
+      <div class="empty-state" else>
+        <image class="empty-img" src="/pkg_main/assets/imgs/bushutongji-kong.png"></image>
+        <text class="empty-text">暂无数据~</text>
+      </div>
+    </div>
+
+    <div class="card">
+      <div class="card-header-center" style="height:37px">
+        <text class="card-title">历史最佳</text>
+        <image class="title-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+      </div>
+      <div class="best-records-list" if="{{hasData}}">
+        <div class="record-header">
+          <text class="record-header-text col-1">项目</text>
+          <text class="record-header-text col-2">获取时间</text>
+          <text class="record-header-text col-3">数据</text>
+        </div>
+        <div class="record-item" for="{{bestRecords}}">
+          <text class="record-col col-1">{{$item.label}}</text>
+          <text class="record-col col-2">{{$item.date}}</text>
+          <text class="record-col col-3">{{$item.value}}</text>
+        </div>
+      </div>
+      <div class="empty-state" else>
+        <image class="empty-img" src="/pkg_main/assets/imgs/lishizuijia.png"></image>
+        <text class="empty-text">暂无数据~</text>
+      </div>
+    </div>
+    
+    <!-- Bottom spacer for navigation bar -->
+    <div class="spacer"></div>
+  </div>
+</template>
+
+<script>
+import storage from '@system.storage'
+
+export default {
+  data: {
+    hasData: false,
+    currentWeekOffset: 0, // 0: 本周, -1: 上周, -2: 上上周...
+    historyStats: {
+      steps: '0',
+      distance: '0',
+      duration: '0',
+      calories: '0'
+    },
+    chartData: {
+      labels: [],
+      values: []
+    },
+    bestRecords: [],
+    allRecords: [] // 存储所有localStorage中的记录
+  },
+  onInit() {
+    this.loadAllRecords()
+  },
+  onShow() {
+    this.loadAllRecords()
+  },
+  
+  // 从localStorage加载所有记录
+  loadAllRecords() {
+    storage.get({
+      key: 'STEP_RECORDS',
+      success: (data) => {
+        if (data) {
+          try {
+            this.allRecords = JSON.parse(data) || []
+          } catch (e) {
+            this.allRecords = []
+          }
+        } else {
+          this.allRecords = []
+        }
+        this.loadWeekData(this.currentWeekOffset)
+        this.loadBestRecord()
+      },
+      fail: () => {
+        this.allRecords = []
+        this.loadWeekData(this.currentWeekOffset)
+      }
+    })
+  },
+  
+  // 获取指定周的日期范围（周一到周日）
+  getWeekDates(offset) {
+    const today = new Date()
+    const dayOfWeek = today.getDay() || 7 // 周日为7
+    
+    // 本周一
+    const monday = new Date(today)
+    monday.setDate(today.getDate() - dayOfWeek + 1 + (offset * 7))
+    
+    const weekDates = []
+    const dayNames = ['周一', '周二', '周三', '周四', '周五', '周六', '周日']
+    
+    for (let i = 0; i < 7; i++) {
+      const date = new Date(monday)
+      date.setDate(monday.getDate() + i)
+      const month = date.getMonth() + 1
+      const day = date.getDate()
+      const dateStr = `${date.getFullYear()}-${String(month).padStart(2, '0')}-${String(day).padStart(2, '0')}`
+      
+      weekDates.push({
+        dateStr: dateStr,
+        label: `${month}.${String(day).padStart(2, '0')}\n${dayNames[i]}`
+      })
+    }
+    return weekDates
+  },
+  
+  // 加载指定周的数据
+  loadWeekData(offset) {
+    const weekDates = this.getWeekDates(offset)
+    const labels = []
+    const values = []
+    let totalSteps = 0
+    
+    // 遍历本周每一天，从allRecords中查找对应数据
+    for (let i = 0; i < weekDates.length; i++) {
+      const dateInfo = weekDates[i]
+      labels.push(dateInfo.label)
+      
+      // 查找该日期的记录
+      const record = this.allRecords.find(r => r.date === dateInfo.dateStr)
+      const steps = record ? (record.steps || 0) : 0
+      values.push(steps)
+      totalSteps += steps
+    }
+    
+    // 计算统计数据
+    const distance = ((totalSteps * 0.7) / 1000).toFixed(1)
+    const duration = Math.round(totalSteps / 100)
+    const calories = Math.round(totalSteps * 0.04)
+    
+    this.chartData = { labels, values }
+    this.historyStats = {
+      steps: totalSteps.toLocaleString(),
+      distance: distance,
+      duration: duration.toString(),
+      calories: calories.toLocaleString()
+    }
+    
+    // 判断是否有数据
+    this.hasData = totalSteps > 0
+    
+    setTimeout(() => {
+      this.drawChart()
+    }, 200)
+  },
+  
+  prevWeek() {
+    this.currentWeekOffset--
+    this.loadWeekData(this.currentWeekOffset)
+  },
+  
+  nextWeek() {
+    if (this.currentWeekOffset < 0) {
+      this.currentWeekOffset++
+      this.loadWeekData(this.currentWeekOffset)
+    }
+  },
+  // 从allRecords中找出历史最佳记录
+  loadBestRecord() {
+    if (this.allRecords && this.allRecords.length > 0) {
+      // 找出步数最多的那一天
+      let bestDay = this.allRecords[0]
+      for (let i = 1; i < this.allRecords.length; i++) {
+        if (this.allRecords[i].steps > bestDay.steps) {
+          bestDay = this.allRecords[i]
+        }
+      }
+      
+      // 计算该天的数据
+      const steps = bestDay.steps || 0
+      const distance = ((steps * 0.7) / 1000).toFixed(2)
+      const duration = Math.round(steps / 100)
+      const calories = Math.round(steps * 0.04)
+      
+      // 更新历史最佳记录
+      this.bestRecords = [
+        { label: '最多步数', date: bestDay.date, value: steps.toLocaleString() + ' 步' },
+        { label: '最长时间', date: bestDay.date, value: duration + ' min' },
+        { label: '最多消耗', date: bestDay.date, value: calories + ' kcal' }
+      ]
+    } else {
+      this.bestRecords = []
+    }
+  },
+  loadData() {},
+  processData(records) {},
+  drawChart() {
+    const canvas = this.$element('step-chart')
+    if (!canvas) return
+    const ctx = canvas.getContext('2d')
+    
+    // Get dimensions from layout or use defaults
+    let width = 227
+    let height = 104
+    
+    const rect = canvas.getBoundingClientRect()
+    if (rect && rect.width && rect.height) {
+      width = rect.width
+      height = rect.height
+    }
+    
+    // Always set canvas buffer size to match
+    canvas.width = width
+    canvas.height = height
+    
+    // Chart settings
+    const paddingLeft = 12
+    const paddingRight = 5
+    const paddingTop = 5
+    const paddingBottom = 18
+    const chartWidth = width - paddingLeft - paddingRight
+    const chartHeight = height - paddingTop - paddingBottom
+    
+    const values = this.chartData.values
+    const labels = this.chartData.labels
+    
+    // Fixed Max Value as per design (8000)
+    const maxVal = 8000
+    const minVal = 0
+
+    // Clear canvas
+    ctx.clearRect(0, 0, width, height)
+    
+    // Helper functions
+    const getX = (index) => {
+      return paddingLeft + (index / (values.length - 1)) * chartWidth
+    }
+    const getY = (val) => {
+      return paddingTop + chartHeight - (val / maxVal * chartHeight)
+    }
+
+    // Draw Grid and Y Axis Labels
+    ctx.strokeStyle = '#eeeeee'
+    ctx.lineWidth = 1
+    ctx.setLineDash([5, 5]) // Dashed grid lines
+    ctx.fillStyle = '#666666' // Slightly darker for text
+    ctx.font = '5px sans-serif'
+    ctx.textAlign = 'right'
+    ctx.textBaseline = 'middle'
+
+    const gridSteps = 8 // 0 to 8000, step 1000
+    // Draw Horizontal Grid Lines
+    for (let i = 0; i <= gridSteps; i++) {
+      const val = (maxVal / gridSteps) * i
+      const y = getY(val)
+      
+      // Draw horizontal grid line
+      ctx.beginPath()
+      ctx.moveTo(paddingLeft, y)
+      ctx.lineTo(width - paddingRight, y)
+      ctx.stroke()
+      
+      // Draw Y Axis Label (show all including 0)
+      ctx.fillText(Math.round(val).toString(), paddingLeft - 2, y)
+    }
+
+    // Draw Vertical Grid Lines & X Axis Labels
+    ctx.textAlign = 'center'
+    ctx.textBaseline = 'top'
+    
+    for (let i = 0; i < labels.length; i++) {
+        const x = getX(i)
+        
+        // Draw vertical grid line
+        ctx.beginPath()
+        ctx.moveTo(x, paddingTop)
+        ctx.lineTo(x, paddingTop + chartHeight)
+        ctx.stroke()
+        
+        // Draw X Axis Labels
+        const parts = labels[i].split('\n')
+        // Date (10.25) - first line
+        ctx.fillStyle = '#666666' 
+        ctx.fillText(parts[0], x, paddingTop + chartHeight + 3)
+        // Day (周一) - second line
+        if (parts[1]) {
+            ctx.fillText(parts[1], x, paddingTop + chartHeight + 9)
+        }
+    }
+    
+    ctx.setLineDash([]) // Reset dash
+
+    if (values.length > 0) {
+        // Prepare points
+        const points = values.map((val, index) => ({
+            x: getX(index),
+            y: getY(val)
+        }))
+
+        // Draw Gradient Area
+        // Create path for fill
+        ctx.beginPath()
+        ctx.moveTo(points[0].x, points[0].y)
+        for (let i = 0; i < points.length - 1; i++) {
+            const x0 = points[i].x
+            const y0 = points[i].y
+            const x1 = points[i+1].x
+            const y1 = points[i+1].y
+            
+            const cpx1 = x0 + (x1 - x0) * 0.4
+            const cpx2 = x0 + (x1 - x0) * 0.6
+            
+            ctx.bezierCurveTo(cpx1, y0, cpx2, y1, x1, y1)
+        }
+        // Close path for fill
+        ctx.lineTo(points[points.length - 1].x, paddingTop + chartHeight)
+        ctx.lineTo(points[0].x, paddingTop + chartHeight)
+        ctx.closePath()
+
+        // Gradient
+        // Ensure we have valid finite values for gradient coordinates
+        const gradientYStart = paddingTop
+        const gradientYEnd = paddingTop + chartHeight
+        
+        if (Number.isFinite(gradientYStart) && Number.isFinite(gradientYEnd)) {
+            const gradient = ctx.createLinearGradient(0, gradientYStart, 0, gradientYEnd)
+            gradient.addColorStop(0, 'rgba(220, 255, 180, 0.9)') // Light Green/Yellow
+            gradient.addColorStop(1, 'rgba(255, 255, 255, 0.1)')
+            ctx.fillStyle = gradient
+            ctx.fill()
+        }
+
+        // Draw Curve Line
+        ctx.beginPath()
+        ctx.strokeStyle = '#000000' // Black line as per image
+        ctx.lineWidth = 2
+        ctx.moveTo(points[0].x, points[0].y)
+        
+        for (let i = 0; i < points.length - 1; i++) {
+            const x0 = points[i].x
+            const y0 = points[i].y
+            const x1 = points[i+1].x
+            const y1 = points[i+1].y
+            
+            const cpx1 = x0 + (x1 - x0) * 0.4
+            const cpx2 = x0 + (x1 - x0) * 0.6
+            
+            ctx.bezierCurveTo(cpx1, y0, cpx2, y1, x1, y1)
+        }
+        ctx.stroke()
+        
+        // Draw Points
+        for (let i = 0; i < points.length; i++) {
+            const p = points[i]
+            
+            ctx.beginPath()
+            ctx.fillStyle = '#ffffff'
+            ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI)
+            ctx.fill()
+            
+            ctx.beginPath()
+            ctx.strokeStyle = '#000000'
+            ctx.lineWidth = 2
+            ctx.arc(p.x, p.y, 6, 0, 2 * Math.PI)
+            ctx.stroke()
+        }
+    }
+  }
+}
+</script>
+
+<style lang="scss">
+@import './../../../assets/styles/style.scss';
+
+.tab-content {
+  flex: 1;
+  flex-direction: column;
+  background-image: url('/pkg_main/assets/imgs/shouyedingbg.png');
+  background-size: 100% auto;
+  background-position: top;
+  background-repeat: no-repeat;
+  background-color: #f5f5f5;
+  padding: 0 15 * $size-factor;
+}
+
+.header {
+  height: 100 * $size-factor;
+  width: 100%;
+  justify-content: center;
+  align-items: center;
+  padding-top: 20 * $size-factor;
+}
+
+.page-title {
+  font-size: 18 * $size-factor;
+  color: #000000;
+  font-weight: 900;
+}
+
+.stats-grid {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 20 * $size-factor;
+  margin-top: 10 * $size-factor;
+}
+
+.stat-item {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+}
+
+.stat-value {
+  font-size: 24 * $size-factor;
+  color: #000000;
+  font-weight: 900;
+  margin-bottom: 5 * $size-factor;
+}
+
+.stat-label {
+  font-size: 10 * $size-factor;
+  color: #333333;
+}
+
+.card {
+  width: 100%;
+  background-color: #ffffff;
+  border-radius: 15 * $size-factor;
+  padding: 15 * $size-factor;
+  flex-direction: column;
+  margin-bottom: 15 * $size-factor;
+}
+
+.card-header-row {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 20 * $size-factor;
+}
+
+.card-header-center {
+  width: 100%;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 20 * $size-factor;
+}
+
+.week-nav-btn {
+  flex-direction: row;
+  align-items: center;
+}
+
+.nav-icon {
+  width: 20 * $size-factor;
+  height: 20 * $size-factor;
+  object-fit: contain;
+}
+
+.nav-text {
+  font-size: 12 * $size-factor;
+  color: #666666;
+  margin: 0 5 * $size-factor;
+}
+
+.card-title-box {
+  flex-direction: row;
+  align-items: center;
+}
+
+.card-title {
+  font-size: 16 * $size-factor;
+  font-weight: 900;
+  color: #000000;
+}
+
+.title-icon {
+  width: 16 * $size-factor;
+  height: 16 * $size-factor;
+  margin-left: 5 * $size-factor;
+  object-fit: contain;
+}
+
+.chart-container {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+}
+
+.step-chart {
+  width: 100%;
+  height: 104px;
+}
+
+.chart-legend {
+  flex-direction: row;
+  align-items: center;
+  margin-top: 10 * $size-factor;
+}
+
+.legend-icon {
+  flex-direction: row;
+  align-items: center;
+  margin-right: 5 * $size-factor;
+}
+
+.legend-circle {
+  width: 6 * $size-factor;
+  height: 6 * $size-factor;
+  border-radius: 3 * $size-factor;
+  border: 1 * $size-factor solid #000000;
+  background-color: #ffffff;
+}
+
+.legend-line {
+  width: 10 * $size-factor;
+  height: 1 * $size-factor;
+  background-color: #000000;
+}
+
+.legend-text {
+  font-size: 10 * $size-factor;
+  color: #333333;
+}
+
+.best-records-list {
+  width: 100%;
+  flex-direction: column;
+}
+
+.record-header {
+  width: 100%;
+  flex-direction: row;
+  background-color: #f5f5f5;
+  height: 30 * $size-factor;
+  align-items: center;
+  margin-bottom: 10 * $size-factor;
+}
+
+.record-header-text {
+  font-size: 12 * $size-factor;
+  color: #999999;
+  text-align: center;
+}
+
+.record-item {
+  width: 100%;
+  flex-direction: row;
+  height: 40 * $size-factor;
+  align-items: center;
+  border-bottom-color: #eeeeee;
+  border-bottom-width: 1px;
+}
+
+.record-col {
+  font-size: 12 * $size-factor;
+  color: #333333;
+  text-align: center;
+}
+
+.col-1 {
+  width: 25%;
+  text-align: left;
+  padding-left: 10 * $size-factor;
+}
+
+.col-2 {
+  width: 45%;
+}
+
+.col-3 {
+  width: 30%;
+  text-align: right;
+  padding-right: 10 * $size-factor;
+}
+
+.empty-state {
+  width: 100%;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 20 * $size-factor 0;
+}
+
+.empty-img {
+  width: 200 * $size-factor;
+  height: 150 * $size-factor;
+  object-fit: contain;
+  margin-bottom: 10 * $size-factor;
+}
+
+.empty-text {
+  font-size: 12 * $size-factor;
+  color: #999999;
+}
+
+.spacer {
+  height: 150 * $size-factor;
+  width: 100%;
+}
+</style>

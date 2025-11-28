@@ -1,0 +1,58 @@
+<template>
+  <div class="doc-page">
+    <web
+      src="{{url}}"
+      class="web-view"
+      id="web"
+      allowthirdpartycookies="true"
+      onpagefinish="onPageFinish"
+    ></web>
+  </div>
+</template>
+
+<script>
+export default {
+  protected: {
+    url: '',
+    title: ''
+  },
+  onInit() {
+    console.info('Webview init with url:', this.url)
+    if (this.title) {
+      this.$page.setTitleBar({ text: this.title })
+    }
+  },
+  onPageFinish() {
+    const webElement = this.$element('web')
+    if (webElement && webElement.executeScript) {
+      try {
+        webElement.executeScript({
+          script: `
+            var meta = document.createElement('meta');
+            meta.name = 'viewport';
+            meta.content = 'width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no';
+            if (!document.querySelector('meta[name="viewport"]')) {
+              document.head.appendChild(meta);
+            }
+          `
+        })
+      } catch (e) {
+        console.error('executeScript error:', e)
+      }
+    }
+  }
+}
+</script>
+
+<style>
+  .doc-page {
+    flex-direction: column;
+    flex: 1;
+    background-color: #ffffff;
+    height: 100%;
+  }
+  .web-view {
+    width: 100%;
+    height: 100%;
+  }
+</style>

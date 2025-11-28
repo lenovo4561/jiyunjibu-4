@@ -1,0 +1,658 @@
+<template>
+  <stack class="page-stack">
+  <div class="tab-content">
+    <!-- 顶部标题 -->
+    <div class="header" style="padding-top: 20 * $size-factor;padding-bottom: 20 * $size-factor">
+      <div class="header-icon-box">
+        <image class="header-icon" src="/pkg_main/assets/imgs/loading-icon.png"></image>
+      </div>
+      <text class="header-title">吉运计步</text>
+    </div>
+
+    <!-- 步数圆环区域 -->
+    <div class="step-circle-area">
+      <div class="step-circle">
+        <image class="circle-bg" src="/pkg_main/assets/imgs/yuanquan.png"></image>
+        <div class="step-circle-inner">
+          <text class="step-label">今日步数</text>
+          <div class="step-number-row">
+            <text class="step-number">0</text>
+            <text class="step-unit">步</text>
+          </div>
+          <div class="step-target-row" onclick="showGoalModal">
+            <text class="step-target">目标:{{targetSteps || '未设置'}}</text>
+            <image class="edit-icon" src="/pkg_main/assets/imgs/qianbi.png"></image>
+          </div>
+        </div>
+      </div>
+      
+      <!-- 添加记录按钮 -->
+      <div class="add-record-btn" onclick="showRecordModal">
+        <text class="btn-text">添加记录</text>
+        <image class="btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+      </div>
+    </div>
+
+    <!-- 数据统计卡片 -->
+    <div class="stats-card">
+      <div class="stats-row">
+        <div class="stats-item">
+          <text class="stats-val">0</text>
+          <text class="stats-label">热量消耗(kcal)</text>
+        </div>
+        <div class="stats-item">
+          <text class="stats-val">0</text>
+          <text class="stats-label">运动距离(km)</text>
+        </div>
+        <div class="stats-item">
+          <text class="stats-val">0</text>
+          <text class="stats-label">运动时长(min)</text>
+        </div>
+      </div>
+      <text class="stats-note">注：长按可删除记录</text>
+    </div>
+
+    <!-- 早起打卡 -->
+    <div class="checkin-section">
+      <div class="section-header">
+        <text class="section-title">早起打卡</text>
+        <image class="section-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+      </div>
+      <div class="checkin-card" style="background-image: url('/pkg_main/assets/imgs/qichuang-4.png');">
+        <div class="checkin-info">
+          <text class="checkin-text">您已打卡 <span class="highlight">0</span> 天</text>
+        </div>
+        <div class="checkin-btn-area">
+           <div class="checkin-btn">
+             <text class="checkin-btn-text">点击打卡</text>
+             <image class="checkin-btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+           </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 运动打卡 -->
+    <div class="checkin-section">
+      <div class="section-header">
+        <text class="section-title">运动打卡</text>
+        <image class="section-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+      </div>
+      <div class="checkin-card" style="background-image: url('/pkg_main/assets/imgs/qichuang-3.png');">
+         <div class="checkin-info">
+          <text class="checkin-text">您已打卡 <span class="highlight">0</span> 天</text>
+        </div>
+        <div class="checkin-btn-area">
+           <div class="checkin-btn">
+             <text class="checkin-btn-text">点击打卡</text>
+             <image class="checkin-btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+           </div>
+        </div>
+      </div>
+    </div>
+    
+    <!-- 底部留白，防止被导航栏遮挡 -->
+    <div class="bottom-spacer"></div>
+
+  </div>
+
+  <!-- 步数目标模态框 -->
+  <div class="modal-overlay" if="{{goalModalVisible}}" onclick="hideGoalModal">
+    <div class="modal-container" onclick="stopPropagation" style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);">
+      <text class="modal-title" style="font-weight: bold; text-align: center;">步数目标</text>
+      
+      <div class="modal-field">
+        <text class="field-label">今日目标步数</text>
+        <input class="field-input" type="number" placeholder="请输入步数目标" value="{{goalStep}}" @change="onGoalChange" />
+      </div>
+      
+      <div class="modal-buttons">
+        <div class="modal-btn modal-btn-cancel" onclick="hideGoalModal" style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;">
+          <text class="modal-btn-text">取消</text>
+        </div>
+        <div class="modal-btn modal-btn-confirm" onclick="confirmGoal" style="background-color: #40e0d0; border-radius: 25 * $size-factor;">
+          <text class="modal-btn-text-confirm">设置</text>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 步数记录模态框 -->
+  <div class="modal-overlay" if="{{recordModalVisible}}" onclick="hideRecordModal">
+    <div class="modal-container" onclick="stopPropagation" style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);">
+      <text class="modal-title" style="font-weight: bold; text-align: center;">步数记录</text>
+      
+      <div class="modal-field">
+        <text class="field-label">运动时长 (分钟)</text>
+        <input class="field-input" type="number" placeholder="请输入运动时长（分钟）" value="{{recordDuration}}" @change="onDurationChange" />
+      </div>
+      
+      <div class="modal-field">
+        <text class="field-label">运动距离 (公里)</text>
+        <input class="field-input" type="number" placeholder="请输入运动距离（公里）" value="{{recordDistance}}" @change="onDistanceChange" />
+      </div>
+      
+      <div class="modal-buttons">
+        <div class="modal-btn modal-btn-cancel" onclick="hideRecordModal" style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;">
+          <text class="modal-btn-text">取消</text>
+        </div>
+        <div class="modal-btn modal-btn-confirm" onclick="confirmRecord" style="background-color: #40e0d0; border-radius: 25 * $size-factor;">
+          <text class="modal-btn-text-confirm">添加</text>
+        </div>
+      </div>
+    </div>
+  </div>
+  </stack>
+</template>
+
+<script>
+import storage from '@system.storage'
+import prompt from '@system.prompt'
+
+export default {
+  data: {
+    recordModalVisible: false,
+    recordDuration: '',
+    recordDistance: '',
+    goalModalVisible: false,
+    goalStep: '',
+    targetSteps: ''
+  },
+  onInit() {
+    // Load target steps if needed
+    this.loadTargetSteps()
+  },
+  loadTargetSteps() {
+    storage.get({
+      key: 'target_steps',
+      success: (data) => {
+        if (data) {
+          this.targetSteps = data
+        }
+      }
+    })
+  },
+  showRecordModal() {
+    this.recordModalVisible = true
+  },
+  hideRecordModal() {
+    this.recordModalVisible = false
+    this.recordDuration = ''
+    this.recordDistance = ''
+  },
+  showGoalModal() {
+    this.goalModalVisible = true
+  },
+  hideGoalModal() {
+    this.goalModalVisible = false
+    this.goalStep = ''
+  },
+  stopPropagation(e) {
+    if (e && e.stopPropagation) {
+      e.stopPropagation()
+    }
+  },
+  onDurationChange(e) {
+    this.recordDuration = e.value
+  },
+  onDistanceChange(e) {
+    this.recordDistance = e.value
+  },
+  onGoalChange(e) {
+    this.goalStep = e.value
+  },
+  confirmRecord() {
+    if (!this.recordDuration && !this.recordDistance) {
+      return
+    }
+    
+    const duration = parseFloat(this.recordDuration) || 0
+    const distance = parseFloat(this.recordDistance) || 0
+    
+    // Estimate steps and calories since they are not input
+    // Approx: 1 km = 1300 steps, 1 km = 60 kcal
+    const steps = Math.floor(distance * 1300)
+    const calories = Math.floor(distance * 60)
+
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`
+    
+    const newRecord = {
+      id: Date.now(),
+      date: dateStr,
+      timestamp: now.getTime(),
+      duration: duration,
+      distance: distance,
+      steps: steps,
+      calories: calories
+    }
+
+    storage.get({
+      key: 'step_records',
+      success: (data) => {
+        let records = []
+        if (data) {
+          try {
+            records = JSON.parse(data)
+          } catch (e) {}
+        }
+        records.push(newRecord)
+        
+        storage.set({
+          key: 'step_records',
+          value: JSON.stringify(records),
+          success: () => {
+            prompt.showToast({
+              message: '记录添加成功'
+            })
+            console.log('Saved record:', newRecord)
+          }
+        })
+      }
+    })
+
+    this.hideRecordModal()
+  },
+  confirmGoal() {
+    if (!this.goalStep) {
+      return
+    }
+    this.targetSteps = this.goalStep
+    
+    storage.set({
+      key: 'target_steps',
+      value: this.goalStep
+    })
+    
+    console.log('设置目标:', this.goalStep)
+    this.hideGoalModal()
+  }
+}
+</script>
+
+<style lang="scss">
+@import './../../../assets/styles/style.scss';
+
+.page-stack {
+  flex: 1;
+  width: 100%;
+  height: 100%;
+}
+
+.tab-content {
+  flex: 1;
+  flex-direction: column;
+  background-image: url('/pkg_main/assets/imgs/shouyedingbg.png');
+  background-size: 100% auto;
+  background-position: top;
+  background-repeat: no-repeat;
+  background-color: #f5f5f5;
+  padding: 20 * $size-factor 15 * $size-factor 0;
+}
+
+.header {
+  margin-top: 20 * $size-factor;
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-bottom: 10 * $size-factor;
+}
+
+.header-icon-box {
+  width: 28 * $size-factor;
+  height: 28 * $size-factor;
+  background-color: #ffffff;
+  border-radius: 6 * $size-factor;
+  border: 1 * $size-factor solid #333333;
+  margin-right: 8 * $size-factor;
+  justify-content: center;
+  align-items: center;
+}
+
+.header-icon {
+  width: 20 * $size-factor;
+  height: 20 * $size-factor;
+  object-fit: contain;
+}
+
+.header-title {
+  font-size: 16 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+  line-height: 20 * $size-factor; /* Explicit line-height */
+}
+
+.step-circle-area {
+  align-items: center;
+  margin-bottom: 20 * $size-factor;
+  flex-direction: column;
+  height: 160 * $size-factor;
+  position: relative;
+}
+
+.step-circle {
+  width: 140 * $size-factor;
+  height: 140 * $size-factor;
+  justify-content: center;
+  align-items: center;
+  position: relative;
+  background-color: transparent;
+}
+
+.circle-bg {
+  position: absolute;
+  width: 140 * $size-factor;
+  height: 140 * $size-factor;
+  top: 0;
+  left: 0;
+  object-fit: contain;
+}
+
+.circle-progress {
+  position: absolute;
+  width: 116 * $size-factor;
+  height: 116 * $size-factor;
+  top: 12 * $size-factor;
+  left: 12 * $size-factor;
+  object-fit: contain;
+}
+
+.step-circle-inner {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  height: 100%;
+  padding-bottom: 10 * $size-factor; /* Shift content up slightly */
+  z-index: 1;
+}
+
+.step-label {
+  font-size: 10 * $size-factor;
+  color: #333333;
+  margin-bottom: 0;
+}
+
+.step-number-row {
+  flex-direction: row;
+  align-items: flex-end;
+  margin-bottom: 0;
+}
+
+.step-number {
+  font-size: 40 * $size-factor;
+  font-weight: 900;
+  color: #000000;
+  line-height: 40 * $size-factor;
+}
+
+.step-unit {
+  font-size: 12 * $size-factor;
+  color: #333333;
+  margin-bottom: 6 * $size-factor;
+  margin-left: 2 * $size-factor;
+  font-weight: bold;
+}
+
+.step-target-row {
+  flex-direction: row;
+  align-items: center;
+}
+
+.step-target {
+  font-size: 9 * $size-factor;
+  color: #333333;
+  font-weight: bold;
+}
+
+.edit-icon {
+  width: 12 * $size-factor;
+  height: 12 * $size-factor;
+  margin-left: 4 * $size-factor;
+  object-fit: contain;
+}
+
+/* Add Record Button - Overlapping Circle */
+.add-record-btn {
+  width: 130 * $size-factor;
+  height: 36 * $size-factor;
+  background-color: #40e0d0;
+  border-radius: 25 * $size-factor;
+  border: 2 * $size-factor solid #000000; 
+  flex-direction: row;
+  justify-content: center;
+  align-items: center;
+  margin-top: -25 * $size-factor; 
+}
+
+.btn-text {
+  font-size: 18 * $size-factor;
+  font-weight: 900;
+  color: #000000;
+  margin-right: 8 * $size-factor;
+}
+
+.btn-icon {
+  width: 30 * $size-factor;
+  height: 18 * $size-factor;
+  object-fit: contain;
+}
+
+/* Stats Card */
+.stats-card {
+  background-color: #ffffff;
+  border-radius: 10 * $size-factor;
+  padding: 15 * $size-factor;
+  padding-bottom: 20 * $size-factor;
+  flex-direction: column;
+  margin-bottom: 15 * $size-factor;
+  width: 100%;
+}
+
+.stats-row {
+  flex-direction: row;
+  justify-content: space-between;
+  margin-bottom: 10 * $size-factor;
+}
+
+.stats-item {
+  flex: 1;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+}
+
+.stats-val {
+  font-size: 14 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+  margin-bottom: 3 * $size-factor;
+}
+
+.stats-label {
+  font-size: 12 * $size-factor;
+  line-height: 24 * $size-factor;
+  color: #666666;
+}
+
+.stats-note {
+  text-align: center;
+  font-size: 11 * $size-factor;
+  color: #cccccc;
+}
+
+/* Check-in Sections */
+.checkin-section {
+  flex-direction: column;
+  margin-bottom: 15 * $size-factor;
+  width: 100%;
+}
+
+.section-header {
+  flex-direction: row;
+  align-items: center;
+  margin-bottom: 8 * $size-factor;
+  height: 20 * $size-factor;
+}
+
+.section-title {
+  font-size: 12 * $size-factor;
+  line-height: 18 * $size-factor;
+  height: 18 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+  margin-right: 5 * $size-factor;
+}
+
+.section-icon {
+  width: 21 * $size-factor;
+  height: 12 * $size-factor;
+  object-fit: contain;
+}
+
+.checkin-card {
+  width: 100%;
+  height: 90 * $size-factor;
+  border-radius: 10 * $size-factor;
+  background-size: cover;
+  background-position: center;
+  padding: 12 * $size-factor;
+  flex-direction: column;
+  justify-content: space-between;
+}
+
+.checkin-info {
+  flex-direction: row;
+}
+
+.checkin-text {
+  font-size: 12 * $size-factor;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
+}
+
+.highlight {
+  color: #ff69b4;
+}
+
+.checkin-btn-area {
+  flex-direction: row;
+  justify-content: flex-end;
+}
+
+.checkin-btn {
+  background-color: #40e0d0;
+  border-radius: 10 * $size-factor;
+  height: 20 * $size-factor;
+  padding: 0 10 * $size-factor;
+  flex-direction: row;
+  align-items: center;
+}
+
+.checkin-btn-text {
+  font-size: 9 * $size-factor;
+  line-height: 12 * $size-factor;
+  height: 12 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+  margin-right: 3 * $size-factor;
+}
+
+.checkin-btn-icon {
+  width: 24 * $size-factor;
+  height: 12 * $size-factor;
+  object-fit: contain;
+}
+
+.bottom-spacer {
+  height: 60 * $size-factor;
+  width: 100%;
+}
+
+/* Modal Styles */
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-color: rgba(0, 0, 0, 0.5);
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-container {
+  width: 300 * $size-factor;
+  background-color: #ffffff;
+  background: linear-gradient(to bottom, #7dfbfb, #ffffff 50%);
+  border-radius: 15 * $size-factor;
+  padding: 20 * $size-factor;
+  flex-direction: column;
+  align-items: center;
+}
+
+.modal-title {
+  font-size: 18 * $size-factor;
+  font-weight: 900;
+  color: #000000;
+  margin-bottom: 20 * $size-factor;
+}
+
+.modal-field {
+  width: 100%;
+  flex-direction: column;
+  margin-bottom: 15 * $size-factor;
+}
+
+.field-label {
+  font-size: 12 * $size-factor;
+  color: #333333;
+  margin-bottom: 8 * $size-factor;
+}
+
+.field-input {
+  width: 100%;
+  height: 40 * $size-factor;
+  border-radius: 8 * $size-factor;
+  padding: 0 12 * $size-factor;
+  font-size: 12 * $size-factor;
+  color: #333333;
+  background-color: #fcfcfc;
+}
+
+.modal-buttons {
+  width: 100%;
+  flex-direction: row;
+  justify-content: space-between;
+  margin-top: 10 * $size-factor;
+}
+
+.modal-btn {
+  width: 120 * $size-factor;
+  height: 40 * $size-factor;
+  border-radius: 20 * $size-factor;
+  justify-content: center;
+  align-items: center;
+}
+
+.modal-btn-cancel {
+  background-color: #ffffff;
+  border: 1 * $size-factor solid #000000;
+}
+
+.modal-btn-confirm {
+  background-color: #66ffff;
+}
+
+.modal-btn-text {
+  font-size: 14 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+}
+
+.modal-btn-text-confirm {
+  font-size: 14 * $size-factor;
+  font-weight: bold;
+  color: #000000;
+}
+</style>
