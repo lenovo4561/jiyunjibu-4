@@ -3,14 +3,19 @@
     <div class="header">
       <text class="page-title">食谱推荐</text>
     </div>
-    
+
     <list class="recipe-list">
-      <list-item type="recipe" class="recipe-item" for="{{(index, item) in recipeList}}" onclick="goDetail(item)">
+      <list-item
+        type="recipe"
+        class="recipe-item"
+        for="{{(index, item) in recipeList}}"
+        onclick="goDetail(item)"
+      >
         <div class="card-content">
           <image class="recipe-image" src="{{item.image}}"></image>
           <div class="recipe-info">
-            <text class="recipe-name">{{item.name}}</text>
-            <text class="recipe-desc">{{item.desc}}</text>
+            <text class="recipe-name">{{ item.name }}</text>
+            <text class="recipe-desc">{{ item.desc }}</text>
           </div>
         </div>
       </list-item>
@@ -24,32 +29,38 @@ import recipesData from '../../../helper/recipesData'
 
 // 图片映射表
 const imageMap = {
-  '番茄炒蛋': '/pkg_main/assets/imgss/fanqiechaidan.jpg',
-  '可乐鸡翅': '/pkg_main/assets/imgss/kele_jichi.jpg',
-  '青椒炒肉丝': '/pkg_main/assets/imgss/qingjiao_chaorusi.jpg',
-  '宫保鸡丁': '/pkg_main/assets/imgss/gongbao_jiding.jpg',
-  '鱼香肉丝': '/pkg_main/assets/imgss/yuxiang_rousi.jpg',
-  '红烧排骨': '/pkg_main/assets/imgss/hongshao_paigu.jpg',
-  '蒜苔炒腊肉': '/pkg_main/assets/imgss/suantai_chaolarou.jpg',
-  '黄焖鸡': '/pkg_main/assets/imgss/huangmenji.jpg',
-  '清炒时蔬': '/pkg_main/assets/imgss/qingchao_shishu.jpg',
-  '蒜蓉油麦菜': '/pkg_main/assets/imgss/suanrong_youmaicai.jpg',
-  '酸辣土豆丝': '/pkg_main/assets/imgss/suanla_tudousi.jpg',
-  '香菇青菜': '/pkg_main/assets/imgss/xianggu_qingcai.jpg',
-  '清炒西兰花': '/pkg_main/assets/imgss/qingchao_xilanhua.jpg',
-  '地三鲜': '/pkg_main/assets/imgss/disanxian.jpg',
-  '番茄鸡蛋汤': '/pkg_main/assets/imgss/fanqie_jidantang.jpg',
-  '紫菜蛋花汤': '/pkg_main/assets/imgss/zicai_danhuatang.jpg',
-  '冬瓜海带排骨汤': '/pkg_main/assets/imgss/donggua_haidai_paigutang.jpg',
-  '玉米排骨汤': '/pkg_main/assets/imgss/yumi_paigutang.jpg',
-  '麻婆豆腐': '/pkg_main/assets/imgss/mapo_doufu.jpg',
-  '菌菇豆腐汤': '/pkg_main/assets/imgss/jungu_doufutang.jpg'
+  番茄炒蛋: '/pkg_main/assets/imgss/fanqiechaidan.jpg',
+  可乐鸡翅: '/pkg_main/assets/imgss/kele_jichi.jpg',
+  青椒炒肉丝: '/pkg_main/assets/imgss/qingjiao_chaorusi.jpg',
+  宫保鸡丁: '/pkg_main/assets/imgss/gongbao_jiding.jpg',
+  鱼香肉丝: '/pkg_main/assets/imgss/yuxiang_rousi.jpg',
+  红烧排骨: '/pkg_main/assets/imgss/hongshao_paigu.jpg',
+  蒜苔炒腊肉: '/pkg_main/assets/imgss/suantai_chaolarou.jpg',
+  黄焖鸡: '/pkg_main/assets/imgss/huangmenji.jpg',
+  清炒时蔬: '/pkg_main/assets/imgss/qingchao_shishu.jpg',
+  蒜蓉油麦菜: '/pkg_main/assets/imgss/suanrong_youmaicai.jpg',
+  酸辣土豆丝: '/pkg_main/assets/imgss/suanla_tudousi.jpg',
+  香菇青菜: '/pkg_main/assets/imgss/xianggu_qingcai.jpg',
+  清炒西兰花: '/pkg_main/assets/imgss/qingchao_xilanhua.jpg',
+  地三鲜: '/pkg_main/assets/imgss/disanxian.jpg',
+  番茄鸡蛋汤: '/pkg_main/assets/imgss/fanqie_jidantang.jpg',
+  紫菜蛋花汤: '/pkg_main/assets/imgss/zicai_danhuatang.jpg',
+  冬瓜海带排骨汤: '/pkg_main/assets/imgss/donggua_haidai_paigutang.jpg',
+  玉米排骨汤: '/pkg_main/assets/imgss/yumi_paigutang.jpg',
+  麻婆豆腐: '/pkg_main/assets/imgss/mapo_doufu.jpg',
+  菌菇豆腐汤: '/pkg_main/assets/imgss/jungu_doufutang.jpg'
 }
 
 // 从title中提取菜名（括号前的部分）
 function extractName(title) {
   const match = title.match(/^([^（(]+)/)
   return match ? match[1].trim() : title
+}
+
+// 从title中提取描述（括号及后面的部分）
+function extractDesc(title) {
+  const match = title.match(/([（(].*)/)
+  return match ? match[1] : ''
 }
 
 export default {
@@ -63,7 +74,7 @@ export default {
       const name = extractName(item.title)
       return {
         name: name,
-        desc: item.title,
+        desc: extractDesc(item.title),
         image: imageMap[name] || '/pkg_main/assets/imgs/logo.png',
         ingredients: item.ingredients,
         steps: item.steps
@@ -77,9 +88,9 @@ export default {
     const stepLabels = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j']
     const formattedSteps = item.steps
       .split('\n')
-      .map((step, index) => `${stepLabels[index] || (index + 1)}. ${step}`)
+      .map((step, index) => `${stepLabels[index] || index + 1}. ${step}`)
       .join('\n')
-    
+
     router.push({
       uri: 'pkg_main/pages/DemoDetail',
       params: {

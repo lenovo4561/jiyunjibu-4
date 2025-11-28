@@ -1,146 +1,244 @@
 <template>
   <stack class="page-stack">
-  <div class="tab-content">
-    <!-- 顶部标题 -->
-    <div class="header" style="padding-top: 20 * $size-factor;padding-bottom: 20 * $size-factor">
-      <div class="header-icon-box">
-        <image class="header-icon" src="/pkg_main/assets/imgs/loading-icon.png"></image>
+    <div class="tab-content">
+      <!-- 顶部标题 -->
+      <div
+        class="header"
+        style="padding-top: 20 * $size-factor;padding-bottom: 20 * $size-factor"
+      >
+        <div class="header-icon-box">
+          <image
+            class="header-icon"
+            src="/pkg_main/assets/imgs/loading-icon.png"
+          ></image>
+        </div>
+        <text class="header-title">吉运计步</text>
       </div>
-      <text class="header-title">吉运计步</text>
-    </div>
 
-    <!-- 步数圆环区域 -->
-    <div class="step-circle-area">
-      <div class="step-circle">
-        <image class="circle-bg" src="/pkg_main/assets/imgs/yuanquan.png"></image>
-        <div class="step-circle-inner">
-          <text class="step-label">今日步数</text>
-          <div class="step-number-row">
-            <text class="step-number">0</text>
-            <text class="step-unit">步</text>
+      <!-- 步数圆环区域 -->
+      <div class="step-circle-area">
+        <div class="step-circle">
+          <image
+            class="circle-bg"
+            src="/pkg_main/assets/imgs/yuanquan.png"
+          ></image>
+          <div class="step-circle-inner">
+            <text class="step-label">今日步数</text>
+            <div class="step-number-row">
+              <text class="step-number">{{ todaySteps }}</text>
+              <text class="step-unit">步</text>
+            </div>
+            <div class="step-target-row" onclick="showGoalModal">
+              <text class="step-target"
+                >目标:{{ targetSteps || '未设置' }}</text
+              >
+              <image
+                class="edit-icon"
+                src="/pkg_main/assets/imgs/qianbi.png"
+              ></image>
+            </div>
           </div>
-          <div class="step-target-row" onclick="showGoalModal">
-            <text class="step-target">目标:{{targetSteps || '未设置'}}</text>
-            <image class="edit-icon" src="/pkg_main/assets/imgs/qianbi.png"></image>
+        </div>
+
+        <!-- 添加记录按钮 -->
+        <div class="add-record-btn" onclick="showRecordModal">
+          <text class="btn-text">添加记录</text>
+          <image
+            class="btn-icon"
+            src="/pkg_main/assets/imgs/yanjing.png"
+          ></image>
+        </div>
+      </div>
+
+      <!-- 数据统计卡片 -->
+      <div class="stats-card">
+        <div class="stats-row">
+          <div class="stats-item">
+            <text class="stats-val">{{ todayCalories }}</text>
+            <text class="stats-label">热量消耗(kcal)</text>
+          </div>
+          <div class="stats-item">
+            <text class="stats-val">{{ todayDistance }}</text>
+            <text class="stats-label">运动距离(km)</text>
+          </div>
+          <div class="stats-item">
+            <text class="stats-val">{{ todayDuration }}</text>
+            <text class="stats-label">运动时长(min)</text>
+          </div>
+        </div>
+        <text class="stats-note">注：长按可删除记录</text>
+      </div>
+
+      <!-- 早起打卡 -->
+      <div class="checkin-section">
+        <div class="section-header">
+          <text class="section-title">早起打卡</text>
+          <image
+            class="section-icon"
+            src="/pkg_main/assets/imgs/yanjing.png"
+          ></image>
+        </div>
+        <div
+          class="checkin-card"
+          style="background-image: url('/pkg_main/assets/imgs/qichuang-4.png');"
+        >
+          <div class="checkin-info">
+            <text class="checkin-text"
+              >您已打卡
+              <span class="highlight">{{ earlyRiseDays }}</span> 天</text
+            >
+          </div>
+          <div class="checkin-btn-area">
+            <div style="flex: 1; justify-content: flex-start;">
+              <text if="{{earlyRiseTime}}" class="checkin-time-text"
+                >您今日起床时间为 {{ earlyRiseTime }}</text
+              >
+            </div>
+            <div class="checkin-btn" onclick="handleEarlyRiseCheckin">
+              <text class="checkin-btn-text">点击打卡</text>
+              <image
+                class="checkin-btn-icon"
+                src="/pkg_main/assets/imgs/yanjing.png"
+              ></image>
+            </div>
           </div>
         </div>
       </div>
-      
-      <!-- 添加记录按钮 -->
-      <div class="add-record-btn" onclick="showRecordModal">
-        <text class="btn-text">添加记录</text>
-        <image class="btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
+
+      <!-- 运动打卡 -->
+      <div class="checkin-section">
+        <div class="section-header">
+          <text class="section-title">运动打卡</text>
+          <image
+            class="section-icon"
+            src="/pkg_main/assets/imgs/yanjing.png"
+          ></image>
+        </div>
+        <div
+          class="checkin-card"
+          style="background-image: url('/pkg_main/assets/imgs/qichuang-3.png');"
+        >
+          <div class="checkin-info">
+            <text class="checkin-text"
+              >您已打卡 <span class="highlight">{{ sportDays }}</span> 天</text
+            >
+          </div>
+          <div class="checkin-btn-area">
+            <div class="checkin-btn" onclick="handleSportCheckin">
+              <text class="checkin-btn-text">点击打卡</text>
+              <image
+                class="checkin-btn-icon"
+                src="/pkg_main/assets/imgs/yanjing.png"
+              ></image>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 底部留白，防止被导航栏遮挡 -->
+      <div class="bottom-spacer"></div>
+    </div>
+
+    <!-- 步数目标模态框 -->
+    <div
+      class="modal-overlay"
+      if="{{goalModalVisible}}"
+      onclick="hideGoalModal"
+    >
+      <div
+        class="modal-container"
+        onclick="stopPropagation"
+        style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);"
+      >
+        <text class="modal-title" style="font-weight: bold; text-align: center;"
+          >步数目标</text
+        >
+
+        <div class="modal-field">
+          <text class="field-label">今日目标步数</text>
+          <input
+            class="field-input"
+            type="number"
+            placeholder="请输入步数目标"
+            value="{{goalStep}}"
+            @change="onGoalChange"
+          />
+        </div>
+
+        <div class="modal-buttons">
+          <div
+            class="modal-btn modal-btn-cancel"
+            onclick="hideGoalModal"
+            style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;"
+          >
+            <text class="modal-btn-text">取消</text>
+          </div>
+          <div
+            class="modal-btn modal-btn-confirm"
+            onclick="confirmGoal"
+            style="background-color: #40e0d0; border-radius: 25 * $size-factor;"
+          >
+            <text class="modal-btn-text-confirm">设置</text>
+          </div>
+        </div>
       </div>
     </div>
 
-    <!-- 数据统计卡片 -->
-    <div class="stats-card">
-      <div class="stats-row">
-        <div class="stats-item">
-          <text class="stats-val">0</text>
-          <text class="stats-label">热量消耗(kcal)</text>
-        </div>
-        <div class="stats-item">
-          <text class="stats-val">0</text>
-          <text class="stats-label">运动距离(km)</text>
-        </div>
-        <div class="stats-item">
-          <text class="stats-val">0</text>
-          <text class="stats-label">运动时长(min)</text>
-        </div>
-      </div>
-      <text class="stats-note">注：长按可删除记录</text>
-    </div>
+    <!-- 步数记录模态框 -->
+    <div
+      class="modal-overlay"
+      if="{{recordModalVisible}}"
+      onclick="hideRecordModal"
+    >
+      <div
+        class="modal-container"
+        onclick="stopPropagation"
+        style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);"
+      >
+        <text class="modal-title" style="font-weight: bold; text-align: center;"
+          >步数记录</text
+        >
 
-    <!-- 早起打卡 -->
-    <div class="checkin-section">
-      <div class="section-header">
-        <text class="section-title">早起打卡</text>
-        <image class="section-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
-      </div>
-      <div class="checkin-card" style="background-image: url('/pkg_main/assets/imgs/qichuang-4.png');">
-        <div class="checkin-info">
-          <text class="checkin-text">您已打卡 <span class="highlight">0</span> 天</text>
+        <div class="modal-field">
+          <text class="field-label">运动时长 (分钟)</text>
+          <input
+            class="field-input"
+            type="number"
+            placeholder="请输入运动时长（分钟）"
+            value="{{recordDuration}}"
+            @change="onDurationChange"
+          />
         </div>
-        <div class="checkin-btn-area">
-           <div class="checkin-btn">
-             <text class="checkin-btn-text">点击打卡</text>
-             <image class="checkin-btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
-           </div>
-        </div>
-      </div>
-    </div>
 
-    <!-- 运动打卡 -->
-    <div class="checkin-section">
-      <div class="section-header">
-        <text class="section-title">运动打卡</text>
-        <image class="section-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
-      </div>
-      <div class="checkin-card" style="background-image: url('/pkg_main/assets/imgs/qichuang-3.png');">
-         <div class="checkin-info">
-          <text class="checkin-text">您已打卡 <span class="highlight">0</span> 天</text>
+        <div class="modal-field">
+          <text class="field-label">运动距离 (公里)</text>
+          <input
+            class="field-input"
+            type="number"
+            placeholder="请输入运动距离（公里）"
+            value="{{recordDistance}}"
+            @change="onDistanceChange"
+          />
         </div>
-        <div class="checkin-btn-area">
-           <div class="checkin-btn">
-             <text class="checkin-btn-text">点击打卡</text>
-             <image class="checkin-btn-icon" src="/pkg_main/assets/imgs/yanjing.png"></image>
-           </div>
-        </div>
-      </div>
-    </div>
-    
-    <!-- 底部留白，防止被导航栏遮挡 -->
-    <div class="bottom-spacer"></div>
 
-  </div>
-
-  <!-- 步数目标模态框 -->
-  <div class="modal-overlay" if="{{goalModalVisible}}" onclick="hideGoalModal">
-    <div class="modal-container" onclick="stopPropagation" style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);">
-      <text class="modal-title" style="font-weight: bold; text-align: center;">步数目标</text>
-      
-      <div class="modal-field">
-        <text class="field-label">今日目标步数</text>
-        <input class="field-input" type="number" placeholder="请输入步数目标" value="{{goalStep}}" @change="onGoalChange" />
-      </div>
-      
-      <div class="modal-buttons">
-        <div class="modal-btn modal-btn-cancel" onclick="hideGoalModal" style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;">
-          <text class="modal-btn-text">取消</text>
-        </div>
-        <div class="modal-btn modal-btn-confirm" onclick="confirmGoal" style="background-color: #40e0d0; border-radius: 25 * $size-factor;">
-          <text class="modal-btn-text-confirm">设置</text>
+        <div class="modal-buttons">
+          <div
+            class="modal-btn modal-btn-cancel"
+            onclick="hideRecordModal"
+            style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;"
+          >
+            <text class="modal-btn-text">取消</text>
+          </div>
+          <div
+            class="modal-btn modal-btn-confirm"
+            onclick="confirmRecord"
+            style="background-color: #40e0d0; border-radius: 25 * $size-factor;"
+          >
+            <text class="modal-btn-text-confirm">添加</text>
+          </div>
         </div>
       </div>
     </div>
-  </div>
-
-  <!-- 步数记录模态框 -->
-  <div class="modal-overlay" if="{{recordModalVisible}}" onclick="hideRecordModal">
-    <div class="modal-container" onclick="stopPropagation" style="background-image: linear-gradient(to bottom, #f5f5f5, #ffffff);">
-      <text class="modal-title" style="font-weight: bold; text-align: center;">步数记录</text>
-      
-      <div class="modal-field">
-        <text class="field-label">运动时长 (分钟)</text>
-        <input class="field-input" type="number" placeholder="请输入运动时长（分钟）" value="{{recordDuration}}" @change="onDurationChange" />
-      </div>
-      
-      <div class="modal-field">
-        <text class="field-label">运动距离 (公里)</text>
-        <input class="field-input" type="number" placeholder="请输入运动距离（公里）" value="{{recordDistance}}" @change="onDistanceChange" />
-      </div>
-      
-      <div class="modal-buttons">
-        <div class="modal-btn modal-btn-cancel" onclick="hideRecordModal" style="background-color: #ffffff; border: 1 * $size-factor solid #000000; border-radius: 25 * $size-factor;">
-          <text class="modal-btn-text">取消</text>
-        </div>
-        <div class="modal-btn modal-btn-confirm" onclick="confirmRecord" style="background-color: #40e0d0; border-radius: 25 * $size-factor;">
-          <text class="modal-btn-text-confirm">添加</text>
-        </div>
-      </div>
-    </div>
-  </div>
   </stack>
 </template>
 
@@ -155,19 +253,185 @@ export default {
     recordDistance: '',
     goalModalVisible: false,
     goalStep: '',
-    targetSteps: ''
+    targetSteps: '',
+    todayCalories: '0',
+    todayDistance: '0',
+    todayDuration: '0',
+    todaySteps: '0',
+    earlyRiseDays: 0,
+    sportDays: 0,
+    earlyRiseTime: ''
   },
   onInit() {
     // Load target steps if needed
     this.loadTargetSteps()
+    this.loadTodayData()
+    this.loadCheckinData()
+  },
+  onShow() {
+    this.loadTodayData()
+    this.loadCheckinData()
+  },
+  loadTodayData() {
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}`
+
+    storage.get({
+      key: 'step_records',
+      success: data => {
+        if (data) {
+          try {
+            const records = JSON.parse(data)
+            // Find records for today
+            const todayRecords = records.filter(r => r.date === dateStr)
+            if (todayRecords.length > 0) {
+              // Use the latest record for today (last one in the filtered list)
+              const latestRecord = todayRecords[todayRecords.length - 1]
+              this.todayCalories = Math.round(
+                latestRecord.calories || 0
+              ).toString()
+              this.todayDistance = (latestRecord.distance || 0).toFixed(2) // Keep decimals for distance
+              this.todayDuration = Math.round(
+                latestRecord.duration || 0
+              ).toString()
+              this.todaySteps = (latestRecord.steps || 0).toString()
+            } else {
+              this.todayCalories = '0'
+              this.todayDistance = '0'
+              this.todayDuration = '0'
+              this.todaySteps = '0'
+            }
+          } catch (e) {
+            console.error('Error parsing records:', e)
+            this.resetTodayData()
+          }
+        } else {
+          this.resetTodayData()
+        }
+      },
+      fail: () => {
+        this.resetTodayData()
+      }
+    })
+  },
+  resetTodayData() {
+    this.todayCalories = '0'
+    this.todayDistance = '0'
+    this.todayDuration = '0'
+    this.todaySteps = '0'
   },
   loadTargetSteps() {
     storage.get({
       key: 'target_steps',
-      success: (data) => {
+      success: data => {
         if (data) {
           this.targetSteps = data
         }
+      }
+    })
+  },
+  loadCheckinData() {
+    const now = new Date()
+    const todayStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}`
+
+    ;['early', 'sport'].forEach(type => {
+      const key = type === 'early' ? 'checkin_data_early' : 'checkin_data_sport'
+      storage.get({
+        key: key,
+        success: data => {
+          if (data) {
+            try {
+              const record = JSON.parse(data)
+              if (type === 'early') {
+                this.earlyRiseDays = record.days || 0
+                // If last checkin was today, show the time
+                if (record.lastDate === todayStr && record.checkinTime) {
+                  this.earlyRiseTime = record.checkinTime
+                } else {
+                  this.earlyRiseTime = ''
+                }
+              } else {
+                this.sportDays = record.days || 0
+              }
+            } catch (e) {}
+          }
+        }
+      })
+    })
+  },
+  handleEarlyRiseCheckin() {
+    this.performCheckin('early')
+  },
+  handleSportCheckin() {
+    this.performCheckin('sport')
+  },
+  performCheckin(type) {
+    const key = type === 'early' ? 'checkin_data_early' : 'checkin_data_sport'
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}`
+
+    storage.get({
+      key: key,
+      success: data => {
+        let record = { days: 0, lastDate: '' }
+        if (data) {
+          try {
+            record = JSON.parse(data)
+          } catch (e) {}
+        }
+
+        if (record.lastDate === dateStr) {
+          prompt.showToast({
+            message: '今日已打卡'
+          })
+          return
+        }
+
+        record.days = (record.days || 0) + 1
+        record.lastDate = dateStr
+
+        // Save checkin time for early rise
+        if (type === 'early') {
+          const timeStr = `${now
+            .getHours()
+            .toString()
+            .padStart(2, '0')}:${now
+            .getMinutes()
+            .toString()
+            .padStart(2, '0')}`
+          record.checkinTime = timeStr
+        }
+
+        storage.set({
+          key: key,
+          value: JSON.stringify(record),
+          success: () => {
+            if (type === 'early') {
+              this.earlyRiseDays = record.days
+              this.earlyRiseTime = record.checkinTime
+            } else {
+              this.sportDays = record.days
+            }
+            prompt.showToast({
+              message: '打卡成功'
+            })
+          }
+        })
       }
     })
   },
@@ -204,18 +468,23 @@ export default {
     if (!this.recordDuration && !this.recordDistance) {
       return
     }
-    
+
     const duration = parseFloat(this.recordDuration) || 0
     const distance = parseFloat(this.recordDistance) || 0
-    
+
     // Estimate steps and calories since they are not input
     // Approx: 1 km = 1300 steps, 1 km = 60 kcal
     const steps = Math.floor(distance * 1300)
     const calories = Math.floor(distance * 60)
 
     const now = new Date()
-    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1).toString().padStart(2, '0')}-${now.getDate().toString().padStart(2, '0')}`
-    
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}`
+
     const newRecord = {
       id: Date.now(),
       date: dateStr,
@@ -228,7 +497,7 @@ export default {
 
     storage.get({
       key: 'step_records',
-      success: (data) => {
+      success: data => {
         let records = []
         if (data) {
           try {
@@ -236,7 +505,7 @@ export default {
           } catch (e) {}
         }
         records.push(newRecord)
-        
+
         storage.set({
           key: 'step_records',
           value: JSON.stringify(records),
@@ -245,6 +514,7 @@ export default {
               message: '记录添加成功'
             })
             console.log('Saved record:', newRecord)
+            this.loadTodayData() // Refresh the displayed data
           }
         })
       }
@@ -257,12 +527,12 @@ export default {
       return
     }
     this.targetSteps = this.goalStep
-    
+
     storage.set({
       key: 'target_steps',
       value: this.goalStep
     })
-    
+
     console.log('设置目标:', this.goalStep)
     this.hideGoalModal()
   }
@@ -417,11 +687,11 @@ export default {
   height: 36 * $size-factor;
   background-color: #40e0d0;
   border-radius: 25 * $size-factor;
-  border: 2 * $size-factor solid #000000; 
+  border: 2 * $size-factor solid #000000;
   flex-direction: row;
   justify-content: center;
   align-items: center;
-  margin-top: -25 * $size-factor; 
+  margin-top: -25 * $size-factor;
 }
 
 .btn-text {
@@ -528,7 +798,7 @@ export default {
   font-size: 12 * $size-factor;
   font-weight: bold;
   color: #ffffff;
-  text-shadow: 1px 1px 2px rgba(0,0,0,0.5); 
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .highlight {
@@ -538,6 +808,14 @@ export default {
 .checkin-btn-area {
   flex-direction: row;
   justify-content: flex-end;
+  align-items: flex-end;
+}
+
+.checkin-time-text {
+  font-size: 14 * $size-factor;
+  font-weight: bold;
+  color: #ffffff;
+  text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5);
 }
 
 .checkin-btn {
