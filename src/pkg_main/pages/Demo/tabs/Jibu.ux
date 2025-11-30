@@ -51,7 +51,7 @@
       </div>
 
       <!-- 数据统计卡片 -->
-      <div class="stats-card">
+      <div class="stats-card" onlongpress="handleDeleteRecord">
         <div class="stats-row">
           <div class="stats-item">
             <text class="stats-val">{{ todayCalories }}</text>
@@ -535,6 +535,95 @@ export default {
 
     console.log('设置目标:', this.goalStep)
     this.hideGoalModal()
+  },
+  handleDeleteRecord() {
+    prompt.showDialog({
+      title: '提示',
+      message: '确定要删除最新的一条记录吗？',
+      buttons: [
+        {
+          text: '确定',
+          color: '#40e0d0'
+        },
+        {
+          text: '取消',
+          color: '#000000'
+        }
+      ],
+      success: (data) => {
+        if (data.index === 0) {
+          this.deleteLatestRecord()
+        }
+      }
+    })
+  },
+  deleteLatestRecord() {
+    const now = new Date()
+    const dateStr = `${now.getFullYear()}-${(now.getMonth() + 1)
+      .toString()
+      .padStart(2, '0')}-${now
+      .getDate()
+      .toString()
+      .padStart(2, '0')}`
+
+    storage.get({
+      key: 'step_records',
+      success: data => {
+        if (data) {
+          try {
+            let records = JSON.parse(data)
+            // Find the index of the last record for today
+            let lastIndex = -1
+            for (let i = records.length - 1; i >= 0; i--) {
+              if (records[i].date === dateStr) {
+                lastIndex = i
+                break
+              }
+            }
+
+            if (lastIndex !== -1) {
+              records.splice(lastIndex, 1)
+
+              // Update UI immediately
+              const todayRecords = records.filter(r => r.date === dateStr)
+              if (todayRecords.length > 0) {
+                const latestRecord = todayRecords[todayRecords.length - 1]
+                this.todayCalories = Math.round(
+                  latestRecord.calories || 0
+                ).toString()
+                this.todayDistance = (latestRecord.distance || 0).toFixed(2)
+                this.todayDuration = Math.round(
+                  latestRecord.duration || 0
+                ).toString()
+                this.todaySteps = (latestRecord.steps || 0).toString()
+              } else {
+                this.resetTodayData()
+              }
+
+              storage.set({
+                key: 'step_records',
+                value: JSON.stringify(records),
+                success: () => {
+                  prompt.showToast({
+                    message: '删除成功'
+                  })
+                }
+              })
+            } else {
+              prompt.showToast({
+                message: '今日无记录可删除'
+              })
+            }
+          } catch (e) {
+            console.error(e)
+          }
+        } else {
+          prompt.showToast({
+            message: '暂无记录'
+          })
+        }
+      }
+    })
   }
 }
 </script>
@@ -568,19 +657,16 @@ export default {
 }
 
 .header-icon-box {
-  width: 28 * $size-factor;
-  height: 28 * $size-factor;
-  background-color: #ffffff;
-  border-radius: 6 * $size-factor;
-  border: 1 * $size-factor solid #333333;
+  width: 32 * $size-factor;
+  height: 32 * $size-factor;
   margin-right: 8 * $size-factor;
   justify-content: center;
   align-items: center;
 }
 
 .header-icon {
-  width: 20 * $size-factor;
-  height: 20 * $size-factor;
+  width: 100%;
+  height: 100%;
   object-fit: contain;
 }
 
@@ -687,7 +773,6 @@ export default {
   height: 36 * $size-factor;
   background-color: #40e0d0;
   border-radius: 25 * $size-factor;
-  border: 2 * $size-factor solid #000000;
   flex-direction: row;
   justify-content: center;
   align-items: center;
